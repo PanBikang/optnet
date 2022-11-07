@@ -190,18 +190,24 @@ def main():
     trainLoader, testLoader = get_loaders(args)
     net = get_net(args)
     optimizer = get_optimizer(args, net.parameters())
+    
+    # save the initial global weight of the net 
+    net_weight = net.state_dict()
 
     args.nparams = sum([p.data.nelement() for p in net.parameters()])
     with open(os.path.join(args.save, 'meta.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=2)
 
     print('  + Number of params: {}'.format(args.nparams))
+    
+    # move net to device
     if args.cuda:
         net = net.cuda()
 
     trainF = open(os.path.join(args.save, 'train.csv'), 'w')
     testF = open(os.path.join(args.save, 'test.csv'), 'w')
 
+    # begin train
     for epoch in range(1, args.nEpoch + 1):
         adjust_opt(args, optimizer, epoch)
         train(args, epoch, net, trainLoader, optimizer, trainF)
