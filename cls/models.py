@@ -4,6 +4,7 @@ import torch.nn as nn
 from torch.autograd import Function, Variable
 from torch.nn.parameter import Parameter
 import torch.nn.functional as F
+from easyfl.models.model import BaseModel
 
 from qpth.qp import QPFunction, QPSolvers
 
@@ -214,3 +215,44 @@ class OptNetEq(nn.Module):
         x = self.fc2(x)
 
         return F.log_softmax(x)
+
+def FlLenet(BaseModel):
+    def __init__(self, nHidden, nCls=10, proj='softmax'):
+        super(FlLenet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 20, kernel_size=5)
+        self.conv2 = nn.Conv2d(20, 50, kernel_size=5)
+        self.fc1 = nn.Linear(50*4*4, nHidden)
+        self.fc2 = nn.Linear(nHidden, nCls)
+
+        self.proj = proj
+        self.nCls = nCls
+
+        if proj == 'simproj':
+            self.Q = Variable(0.5*torch.eye(nCls).double().cuda())
+            self.G = Variable(-torch.eye(nCls).double().cuda())
+            self.h = Variable(-1e-5*torch.ones(nCls).double().cuda())
+            self.A = Variable((torch.ones(1, nCls)).double().cuda())
+            self.b = Variable(torch.Tensor([1.]).double().cuda())
+            def projF(x):
+                nBatch = x.size(0)
+                Q = self.Q.unsqueeze(0).expand(nBatch, nCls, nCls)
+                G = self.G.unsqueeze(0).expand(nBatch, nCls, nCls)
+                h = self.h.unsqueeze(0).expand(nBatch, nCls)
+                A = self.A.unsqueeze(0).expand(nBatch, 1, nCls)
+                b = self.b.unsqueeze(0).expand(nBatch, 1)
+                x = QPFunction()(Q, -x.double(), G, h, A, b).float()
+                x = x.log()
+                return x
+            self.projF = projF
+        else:
+            self.projF = F.log_softmax
+
+    def forward(self, x):
+        nBatch = x.size(0)
+
+        x = F.max_pool2d(self.conv1(x), 2)
+        x = F.max_pool2d(self.conv2(x), 2)
+        x = x.view(nBatch, -1)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return self.projF(x)
