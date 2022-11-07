@@ -42,14 +42,14 @@ def get_loaders(args):
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
     if args.dataset == 'mnist':
         trainLoader = torch.utils.data.DataLoader(
-            dset.MNIST('data/mnist', train=True, download=True,
+            dset.MNIST('/storage/data/panbk/dataset/', train=True, download=True,
                            transform=transforms.Compose([
                                transforms.ToTensor(),
                                transforms.Normalize((0.1307,), (0.3081,))
                            ])),
             batch_size=args.batchSz, shuffle=True, **kwargs)
         testLoader = torch.utils.data.DataLoader(
-            dset.MNIST('data/mnist', train=False, transform=transforms.Compose([
+            dset.MNIST('/storage/data/panbk/dataset/', train=False, transform=transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize((0.1307,), (0.3081,))
             ])),
@@ -71,11 +71,11 @@ def get_loaders(args):
         ])
 
         trainLoader = DataLoader(
-            dset.CIFAR10(root='data/cifar', train=True, download=True,
+            dset.CIFAR10(root='/storage/data/panbk/dataset/', train=True, download=True,
                         transform=trainTransform),
             batch_size=args.batchSz, shuffle=True, **kwargs)
         testLoader = DataLoader(
-            dset.CIFAR10(root='data/cifar', train=False, download=True,
+            dset.CIFAR10(root='/storage/data/panbk/dataset/', train=False, download=True,
                         transform=testTransform),
             batch_size=args.batchSz, shuffle=False, **kwargs)
     else:
